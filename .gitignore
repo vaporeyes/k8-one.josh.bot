@@ -29,3 +29,12 @@ infra/.terraform.lock.hcl
 
 # jetbrains setting folder
 .idea/
+
+# Terraform
+terraform/.terraform/
+terraform/**/.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+*.tfvars
+!example.tfvars

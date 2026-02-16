@@ -55,8 +55,7 @@ jobs:
       - name: Terraform Apply
         run: |
           terraform -chdir=terraform apply \
-            -auto-approve -input=false \
-            -var="bucket_name=${{ secrets.TERRAFORM_BUCKET }}"
+            -auto-approve -input=false
 
       - name: Deploy to S3
         run: |
