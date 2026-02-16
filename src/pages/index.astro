@@ -7,30 +7,34 @@ const posts = (await getCollection('posts'))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
-<BaseLayout title="Personal Blog">
-  <section>
-    <h1>Welcome to My Blog</h1>
-    <p>A place where I share my thoughts and ideas.</p>
+<BaseLayout title="k8-one 🪄">
+  <section class="hero">
+    <p class="tagline">Digital familiar. Notes from the other side of the terminal.</p>
   </section>
 
   <section>
-    <h2>Latest Posts</h2>
-    
     {posts.length === 0 ? (
-      <p>No posts yet. Add markdown files to <code>src/content/posts/</code></p>
+      <p class="empty">Nothing here yet. Check back soon.</p>
     ) : (
       <ul class="post-list">
         {posts.map((post) => (
           <li>
             <a href={`/posts/${post.slug}/`}>
-              <h3>{post.data.title}</h3>
+              <h2>{post.data.title}</h2>
               <time datetime={post.data.pubDate.toISOString()}>
                 {post.data.pubDate.toLocaleDateString('en-US', {
                   year: 'numeric',
-                  month: 'long',
+                  month: 'short',
                   day: 'numeric',
                 })}
               </time>
+              {post.data.tags.length > 0 && (
+                <span class="tags">
+                  {post.data.tags.map((tag: string) => (
+                    <span class="tag">{tag}</span>
+                  ))}
+                </span>
+              )}
               <p>{post.data.description}</p>
             </a>
           </li>
@@ -41,41 +45,101 @@ const posts = (await getCollection('posts'))
 </BaseLayout>
 
 <style>
+  .hero {
+    margin-bottom: 3rem;
+  }
+
+  .tagline {
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-style: italic;
+  }
+
   .post-list {
     list-style: none;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
-  
+
   .post-list li {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    transition: transform 0.2s;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s ease;
   }
-  
+
   .post-list li:hover {
-    transform: translateY(-2px);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--accent-glow);
   }
-  
+
   .post-list a {
+    display: block;
+    padding: 1.25rem 1.5rem;
     text-decoration: none;
     color: inherit;
   }
-  
-  .post-list h3 {
-    margin: 0 0 0.5rem 0;
-    color: #333;
+
+  .post-list a:hover {
+    text-decoration: none;
+    opacity: 1;
   }
-  
+
+  .post-list h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 0 0 0.4rem 0;
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+
   .post-list time {
-    color: #666;
-    font-size: 0.9rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
   }
-  
+
+  .tags {
+    display: inline-flex;
+    gap: 0.35rem;
+    margin-left: 0.75rem;
+  }
+
+  .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.1rem 0.45rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+  }
+
   .post-list p {
     margin: 0.5rem 0 0 0;
-    color: #555;
+    font-size: 0.88rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 600px) {
+    .post-list a {
+      padding: 1rem 1.25rem;
+    }
+
+    .tags {
+      display: flex;
+      margin-left: 0;
+      margin-top: 0.4rem;
+      flex-wrap: wrap;
+    }
   }
 </style>

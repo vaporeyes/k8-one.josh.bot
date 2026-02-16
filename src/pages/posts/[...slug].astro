@@ -14,7 +14,7 @@ const post = Astro.props;
 const { Content } = await post.render();
 ---
 
-<BaseLayout title={post.data.title} description={post.data.description}>
+<BaseLayout title={`${post.data.title} · k8-one`} description={post.data.description}>
   <article>
     <header class="post-header">
       <h1>{post.data.title}</h1>
@@ -28,8 +28,8 @@ const { Content } = await post.render();
         </time>
         {post.data.tags.length > 0 && (
           <span class="tags">
-            {post.data.tags.map((tag) => (
-              <span class="tag">#{tag}</span>
+            {post.data.tags.map((tag: string) => (
+              <span class="tag">{tag}</span>
             ))}
           </span>
         )}
@@ -39,81 +39,124 @@ const { Content } = await post.render();
     <div class="content">
       <Content />
     </div>
-    
-    <a href="/" class="back-link">← Back to all posts</a>
+
+    <nav class="post-nav">
+      <a href="/" class="back-link">← all posts</a>
+    </nav>
   </article>
 </BaseLayout>
 
 <style>
+  article {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
   .post-header {
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid #eee;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
   }
-  
+
   .post-header h1 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.8rem;
   }
-  
+
   .meta {
-    color: #666;
-    font-size: 0.95rem;
     display: flex;
-    gap: 1rem;
     align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
   }
-  
+
+  .meta time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
   .tags {
-    display: flex;
-    gap: 0.5rem;
+    display: inline-flex;
+    gap: 0.35rem;
+    flex-wrap: wrap;
   }
-  
+
   .tag {
-    background: #f0f0f0;
-    padding: 0.2rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.12rem 0.5rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 10px;
   }
-  
+
   .content {
-    line-height: 1.8;
+    line-height: 1.85;
+    font-size: 1.02rem;
   }
-  
+
   .content :global(h2) {
-    margin-top: 2rem;
+    margin-top: 2.5rem;
     margin-bottom: 1rem;
+    color: var(--gold);
   }
-  
+
   .content :global(h3) {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
     margin-bottom: 0.75rem;
   }
-  
+
+  .content :global(p) {
+    margin-bottom: 1.25rem;
+  }
+
   .content :global(ul), .content :global(ol) {
-    margin-bottom: 1rem;
+    margin-bottom: 1.25rem;
     padding-left: 1.5rem;
   }
-  
+
   .content :global(li) {
     margin-bottom: 0.5rem;
   }
-  
+
   .content :global(blockquote) {
-    border-left: 4px solid #ddd;
-    padding-left: 1rem;
-    margin: 1rem 0;
-    color: #666;
+    border-left: 3px solid var(--accent);
+    padding-left: 1.25rem;
+    margin: 1.5rem 0;
+    color: var(--muted);
     font-style: italic;
   }
-  
-  .back-link {
-    display: inline-block;
-    margin-top: 2rem;
-    color: #0066cc;
-    text-decoration: none;
+
+  .post-nav {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
   }
-  
+
+  .back-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
   .back-link:hover {
     text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .post-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .content {
+      font-size: 0.95rem;
+    }
   }
 </style>
