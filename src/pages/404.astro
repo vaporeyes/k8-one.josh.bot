@@ -1,0 +1,41 @@
+---
+// ABOUTME: Custom 404 error page served by CloudFront when a page is not found.
+// ABOUTME: Astro generates this as /404.html in the build output.
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="404 - Page Not Found">
+  <section class="not-found">
+    <h1>404</h1>
+    <p>The page you're looking for doesn't exist.</p>
+    <a href="/">Back to home</a>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found {
+    text-align: center;
+    padding: 4rem 1rem;
+  }
+
+  .not-found h1 {
+    font-size: 6rem;
+    margin-bottom: 0.5rem;
+    color: #ccc;
+  }
+
+  .not-found p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+  }
+
+  .not-found a {
+    text-decoration: none;
+    font-weight: 600;
+  }
+
+  .not-found a:hover {
+    text-decoration: underline;
+  }
+</style>

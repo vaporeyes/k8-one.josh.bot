@@ -17,6 +17,13 @@ pnpm-debug.log*
 .env
 .env.production
 
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/*.tfvars
+infra/.terraform.lock.hcl
+
 # macOS-specific files
 .DS_Store
 

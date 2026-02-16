@@ -1,0 +1,90 @@
+# ABOUTME: Builds the Astro blog and deploys to S3 + CloudFront on push to main.
+# ABOUTME: Uses GitHub OIDC for short-lived AWS credentials (no stored keys).
+
+name: Deploy Blog
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Astro site
+        run: npm run build
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GithubOIDCAdmin
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: |
+          terraform -chdir=terraform init \
+            -backend-config="bucket=${{ secrets.TERRAFORM_BUCKET }}" \
+            -backend-config="key=${{ github.event.repository.name }}/terraform.tfstate" \
+            -backend-config="region=us-east-1"
+
+      - name: Terraform Apply
+        run: |
+          terraform -chdir=terraform apply \
+            -auto-approve -input=false \
+            -var="bucket_name=${{ secrets.TERRAFORM_BUCKET }}"
+
+      - name: Deploy to S3
+        run: |
+          # Sync static assets with long cache (JS, CSS, images, fonts)
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }}/ \
+            --delete \
+            --cache-control "public,max-age=31536000,immutable" \
+            --exclude "*.html" \
+            --exclude "*.xml" \
+            --exclude "*.json" \
+            --exclude "*.txt"
+
+          # Sync HTML with short cache (content changes on deploy)
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }}/ \
+            --cache-control "public,max-age=3600" \
+            --exclude "*" \
+            --include "*.html"
+
+          # Sync XML/JSON/TXT with short cache (sitemaps, feeds, robots.txt)
+          aws s3 sync dist/ s3://${{ secrets.S3_BUCKET }}/ \
+            --cache-control "public,max-age=3600" \
+            --exclude "*" \
+            --include "*.xml" \
+            --include "*.json" \
+            --include "*.txt"
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
