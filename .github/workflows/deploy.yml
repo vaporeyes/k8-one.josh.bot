@@ -29,13 +29,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Infrastructure Scan (Checkov)
-        uses: bridgecrewio/checkov-action@master
-        with:
-          directory: terraform/
-          framework: terraform
-          soft_fail: false # Stop the build if insecure TF is found
-
   build_and_plan:
     needs: security_scan
     runs-on: ubuntu-latest

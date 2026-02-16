@@ -21,9 +21,6 @@ data "aws_iam_openid_connect_provider" "github" {
 # ---------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "this" {
-  #checkov:skip=CKV_AWS_144:Cross-region replication not needed for a static blog
-  #checkov:skip=CKV2_AWS_62:S3 event notifications not needed for static site hosting
-  #checkov:skip=CKV2_AWS_61:Lifecycle configuration not needed; versioning handles rollback
   bucket = "${replace(var.domain_name, ".", "-")}-static-site"
 
   tags = {
@@ -216,11 +213,6 @@ resource "aws_cloudfront_function" "rewrite_uri" {
 # CloudFront access logging bucket
 # ---------------------------------------------------------------------------
 
-#checkov:skip=CKV_AWS_144:Cross-region replication not needed for log storage
-#checkov:skip=CKV2_AWS_62:Event notifications not needed for log bucket
-#checkov:skip=CKV2_AWS_61:Lifecycle configuration can be added later for log rotation
-#checkov:skip=CKV_AWS_145:Logs bucket uses AES256; KMS unnecessary for access logs
-#checkov:skip=CKV_AWS_18:Access logging not needed on the logging bucket itself
 resource "aws_s3_bucket" "cf_logs" {
   bucket = "${replace(var.domain_name, ".", "-")}-cf-logs"
 
@@ -380,7 +372,6 @@ resource "aws_cloudfront_response_headers_policy" "this" {
 # CloudFront distribution
 # ---------------------------------------------------------------------------
 
-#checkov:skip=CKV_AWS_310:Origin failover not needed; single S3 origin is sufficient for a blog
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   is_ipv6_enabled     = true
