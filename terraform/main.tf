@@ -120,6 +120,30 @@ resource "aws_acm_certificate_validation" "this" {
 }
 
 # ---------------------------------------------------------------------------
+# CloudFront Function: rewrite URIs to index.html for clean URLs
+# ---------------------------------------------------------------------------
+
+resource "aws_cloudfront_function" "rewrite_uri" {
+  name    = "${replace(var.domain_name, ".", "-")}-rewrite-uri"
+  runtime = "cloudfront-js-2.0"
+  comment = "Append index.html to directory-style URIs"
+  publish = true
+
+  code = <<-EOF
+    function handler(event) {
+      var request = event.request;
+      var uri = request.uri;
+      if (uri.endsWith('/')) {
+        request.uri += 'index.html';
+      } else if (!uri.includes('.')) {
+        request.uri += '/index.html';
+      }
+      return request;
+    }
+  EOF
+}
+
+# ---------------------------------------------------------------------------
 # CloudFront distribution
 # ---------------------------------------------------------------------------
 
@@ -155,6 +179,11 @@ resource "aws_cloudfront_distribution" "this" {
     min_ttl     = 0
     default_ttl = 3600
     max_ttl     = 86400
+
+    function_association {
+      event_type   = "viewer-request"
+      function_arn = aws_cloudfront_function.rewrite_uri.arn
+    }
   }
 
   # S3 returns 403 for missing keys; map to 404 page
