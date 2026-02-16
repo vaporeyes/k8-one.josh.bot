@@ -27,6 +27,9 @@ infra/.terraform.lock.hcl
 # macOS-specific files
 .DS_Store
 
+# a0proj
+.a0proj/
+
 # jetbrains setting folder
 .idea/
 
