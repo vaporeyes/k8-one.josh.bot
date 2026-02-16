@@ -20,10 +20,10 @@ data "aws_iam_openid_connect_provider" "github" {
 # S3 bucket (private, versioned, no public access)
 # ---------------------------------------------------------------------------
 
-#checkov:skip=CKV_AWS_144:Cross-region replication not needed for a static blog
-#checkov:skip=CKV2_AWS_62:S3 event notifications not needed for static site hosting
-#checkov:skip=CKV2_AWS_61:Lifecycle configuration not needed; versioning handles rollback
 resource "aws_s3_bucket" "this" {
+  #checkov:skip=CKV_AWS_144:Cross-region replication not needed for a static blog
+  #checkov:skip=CKV2_AWS_62:S3 event notifications not needed for static site hosting
+  #checkov:skip=CKV2_AWS_61:Lifecycle configuration not needed; versioning handles rollback
   bucket = "${replace(var.domain_name, ".", "-")}-static-site"
 
   tags = {
