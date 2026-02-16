@@ -12,6 +12,8 @@ export async function getStaticPaths() {
 
 const post = Astro.props;
 const { Content } = await post.render();
+const words = post.body.split(/\s+/).length;
+const readMin = Math.max(1, Math.round(words / 230));
 ---
 
 <BaseLayout title={`${post.data.title} · k8-one`} description={post.data.description}>
@@ -26,10 +28,11 @@ const { Content } = await post.render();
             day: 'numeric',
           })}
         </time>
+        <span class="reading-time">· {readMin} min read</span>
         {post.data.tags.length > 0 && (
           <span class="tags">
             {post.data.tags.map((tag: string) => (
-              <span class="tag">{tag}</span>
+              <a href={`/tags/${tag}/`} class="tag">{tag}</a>
             ))}
           </span>
         )}
@@ -86,6 +89,12 @@ const { Content } = await post.render();
     flex-wrap: wrap;
   }
 
+  .reading-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
   .tag {
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.7rem;
@@ -93,6 +102,14 @@ const { Content } = await post.render();
     background: var(--border);
     color: var(--muted);
     border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .tag:hover {
+    color: var(--accent);
+    text-decoration: none;
+    opacity: 1;
   }
 
   .content {

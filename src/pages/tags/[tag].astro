@@ -1,0 +1,151 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts');
+  const tags = [...new Set(posts.flatMap(p => p.data.tags))];
+  return tags.map(tag => ({
+    params: { tag },
+    props: {
+      tag,
+      posts: posts
+        .filter(p => !p.data.draft && p.data.tags.includes(tag))
+        .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+    },
+  }));
+}
+
+function readingTime(body: string): string {
+  const words = body.split(/\s+/).length;
+  const min = Math.max(1, Math.round(words / 230));
+  return `${min} min read`;
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<BaseLayout title={`#${tag} · k8-one`} description={`Posts tagged "${tag}"`}>
+  <header class="tag-header">
+    <a href="/" class="back">← all posts</a>
+    <h1>#{tag}</h1>
+    <p class="count">{posts.length} post{posts.length !== 1 ? 's' : ''}</p>
+  </header>
+
+  <ul class="post-list">
+    {posts.map((post: any) => (
+      <li>
+        <a href={`/posts/${post.slug}/`}>
+          <h3>{post.data.title}</h3>
+          <div class="post-meta">
+            <time datetime={post.data.pubDate.toISOString()}>
+              {post.data.pubDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            </time>
+            <span class="reading-time">{readingTime(post.body)}</span>
+          </div>
+          <p>{post.data.description}</p>
+        </a>
+      </li>
+    ))}
+  </ul>
+</BaseLayout>
+
+<style>
+  .tag-header {
+    margin-bottom: 2rem;
+  }
+
+  .back {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--accent);
+    text-decoration: none;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+
+  .back:hover { text-decoration: underline; }
+
+  .tag-header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--accent);
+    font-size: 1.6rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+
+  .post-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .post-list li {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .post-list li:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  .post-list a {
+    display: block;
+    padding: 1.1rem 1.35rem;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .post-list a:hover { text-decoration: none; opacity: 1; }
+
+  .post-list h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 0 0 0.35rem 0;
+    line-height: 1.4;
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .post-meta time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.73rem;
+    color: var(--muted);
+  }
+
+  .reading-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--border);
+  }
+
+  .reading-time::before {
+    content: '·';
+    margin-right: 0.6rem;
+    color: var(--border);
+  }
+
+  .post-list p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+</style>
