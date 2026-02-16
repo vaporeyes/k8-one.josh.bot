@@ -31,6 +31,12 @@ variable "terraform_state_bucket" {
   default     = "k8-one-terraform-state"
 }
 
+variable "geo_restriction_locations" {
+  description = "ISO 3166-1 alpha-2 country codes allowed to access the CloudFront distribution"
+  type        = list(string)
+  default     = ["US", "CA", "GB", "DE", "FR", "AU", "NZ", "JP"]
+}
+
 variable "cloudfront_price_class" {
   description = "CloudFront price class (PriceClass_100 = US/EU, PriceClass_200 = +Asia, PriceClass_All = global)"
   type        = string

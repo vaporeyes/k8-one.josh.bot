@@ -10,6 +10,8 @@ data "aws_route53_zone" "this" {
   private_zone = false
 }
 
+data "aws_caller_identity" "current" {}
+
 data "aws_iam_openid_connect_provider" "github" {
   url = "https://token.actions.githubusercontent.com"
 }
@@ -18,6 +20,9 @@ data "aws_iam_openid_connect_provider" "github" {
 # S3 bucket (private, versioned, no public access)
 # ---------------------------------------------------------------------------
 
+#checkov:skip=CKV_AWS_144:Cross-region replication not needed for a static blog
+#checkov:skip=CKV2_AWS_62:S3 event notifications not needed for static site hosting
+#checkov:skip=CKV2_AWS_61:Lifecycle configuration not needed; versioning handles rollback
 resource "aws_s3_bucket" "this" {
   bucket = "${replace(var.domain_name, ".", "-")}-static-site"
 
@@ -31,6 +36,33 @@ resource "aws_s3_bucket_versioning" "this" {
 
   versioning_configuration {
     status = "Enabled"
+  }
+}
+
+resource "aws_kms_key" "s3" {
+  description             = "KMS key for ${var.domain_name} S3 bucket encryption"
+  deletion_window_in_days = 10
+  enable_key_rotation     = true
+
+  tags = {
+    Name = "${var.domain_name}-s3-key"
+  }
+}
+
+resource "aws_kms_alias" "s3" {
+  name          = "alias/${replace(var.domain_name, ".", "-")}-s3"
+  target_key_id = aws_kms_key.s3.key_id
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
+  bucket = aws_s3_bucket.this.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.s3.arn
+    }
+    bucket_key_enabled = true
   }
 }
 
@@ -74,6 +106,43 @@ data "aws_iam_policy_document" "s3_cloudfront" {
       values   = [aws_cloudfront_distribution.this.arn]
     }
   }
+}
+
+# Grant CloudFront permission to use the KMS key for decrypting S3 objects
+resource "aws_kms_key_policy" "s3_cloudfront" {
+  key_id = aws_kms_key.s3.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EnableRootAccountFullAccess"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowCloudFrontDecrypt"
+        Effect = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action = [
+          "kms:Decrypt",
+          "kms:GenerateDataKey*"
+        ]
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.this.arn
+          }
+        }
+      }
+    ]
+  })
 }
 
 resource "aws_s3_bucket_policy" "this" {
@@ -144,9 +213,174 @@ resource "aws_cloudfront_function" "rewrite_uri" {
 }
 
 # ---------------------------------------------------------------------------
+# CloudFront access logging bucket
+# ---------------------------------------------------------------------------
+
+#checkov:skip=CKV_AWS_144:Cross-region replication not needed for log storage
+#checkov:skip=CKV2_AWS_62:Event notifications not needed for log bucket
+#checkov:skip=CKV2_AWS_61:Lifecycle configuration can be added later for log rotation
+#checkov:skip=CKV_AWS_145:Logs bucket uses AES256; KMS unnecessary for access logs
+#checkov:skip=CKV_AWS_18:Access logging not needed on the logging bucket itself
+resource "aws_s3_bucket" "cf_logs" {
+  bucket = "${replace(var.domain_name, ".", "-")}-cf-logs"
+
+  tags = {
+    Name = "${var.domain_name} CloudFront access logs"
+  }
+}
+
+resource "aws_s3_bucket_ownership_controls" "cf_logs" {
+  bucket = aws_s3_bucket.cf_logs.id
+
+  rule {
+    object_ownership = "BucketOwnerPreferred"
+  }
+}
+
+resource "aws_s3_bucket_acl" "cf_logs" {
+  bucket = aws_s3_bucket.cf_logs.id
+  acl    = "log-delivery-write"
+
+  depends_on = [aws_s3_bucket_ownership_controls.cf_logs]
+}
+
+resource "aws_s3_bucket_public_access_block" "cf_logs" {
+  bucket = aws_s3_bucket.cf_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "cf_logs" {
+  bucket = aws_s3_bucket.cf_logs.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# WAFv2 WebACL for CloudFront (includes AWS Managed Rules for Log4j/common threats)
+# ---------------------------------------------------------------------------
+
+resource "aws_wafv2_web_acl" "this" {
+  name        = "${replace(var.domain_name, ".", "-")}-waf"
+  description = "WAF for ${var.domain_name} CloudFront distribution"
+  scope       = "CLOUDFRONT"
+
+  default_action {
+    allow {}
+  }
+
+  # AWS Managed Rules - Common Rule Set
+  rule {
+    name     = "aws-managed-common"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${replace(var.domain_name, ".", "-")}-common-rules"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # AWS Managed Rules - Known Bad Inputs (includes Log4j / Log4Shell protection)
+  rule {
+    name     = "aws-managed-known-bad-inputs"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${replace(var.domain_name, ".", "-")}-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${replace(var.domain_name, ".", "-")}-waf"
+    sampled_requests_enabled   = true
+  }
+
+  tags = {
+    Name = "${var.domain_name} WAF"
+  }
+}
+
+# ---------------------------------------------------------------------------
+# CloudFront response headers policy (security headers)
+# ---------------------------------------------------------------------------
+
+resource "aws_cloudfront_response_headers_policy" "this" {
+  name    = "${replace(var.domain_name, ".", "-")}-security-headers"
+  comment = "Security headers for ${var.domain_name}"
+
+  security_headers_config {
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+
+    strict_transport_security {
+      access_control_max_age_sec = 63072000
+      include_subdomains         = true
+      preload                    = true
+      override                   = true
+    }
+
+    content_security_policy {
+      content_security_policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; frame-ancestors 'none'"
+      override                = true
+    }
+
+    xss_protection {
+      mode_block = true
+      protection = true
+      override   = true
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
 # CloudFront distribution
 # ---------------------------------------------------------------------------
 
+#checkov:skip=CKV_AWS_310:Origin failover not needed; single S3 origin is sufficient for a blog
 resource "aws_cloudfront_distribution" "this" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -154,6 +388,7 @@ resource "aws_cloudfront_distribution" "this" {
   default_root_object = "index.html"
   price_class         = var.cloudfront_price_class
   aliases             = [var.domain_name]
+  web_acl_id          = aws_wafv2_web_acl.this.arn
 
   origin {
     origin_id                = "s3-${aws_s3_bucket.this.id}"
@@ -161,12 +396,19 @@ resource "aws_cloudfront_distribution" "this" {
     origin_access_control_id = aws_cloudfront_origin_access_control.this.id
   }
 
+  logging_config {
+    include_cookies = false
+    bucket          = aws_s3_bucket.cf_logs.bucket_domain_name
+    prefix          = "cloudfront/"
+  }
+
   default_cache_behavior {
-    target_origin_id       = "s3-${aws_s3_bucket.this.id}"
-    viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
+    target_origin_id         = "s3-${aws_s3_bucket.this.id}"
+    viewer_protocol_policy   = "redirect-to-https"
+    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
+    cached_methods           = ["GET", "HEAD"]
+    compress                 = true
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.this.id
 
     forwarded_values {
       query_string = false
@@ -203,7 +445,8 @@ resource "aws_cloudfront_distribution" "this" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = var.geo_restriction_locations
     }
   }
 
@@ -298,6 +541,17 @@ data "aws_iam_policy_document" "deploy_permissions" {
       aws_s3_bucket.this.arn,
       "${aws_s3_bucket.this.arn}/*",
     ]
+  }
+
+  statement {
+    sid = "KMSEncryptDecrypt"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey",
+    ]
+
+    resources = [aws_kms_key.s3.arn]
   }
 
   statement {
