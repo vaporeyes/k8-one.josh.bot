@@ -1,0 +1,105 @@
+---
+// ABOUTME: Fetches Josh's current status from api.josh.bot at build time.
+// ABOUTME: Renders a compact status widget showing activity, location, and availability.
+
+let status = null;
+try {
+  const res = await fetch('https://api.josh.bot/v1/status', {
+    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+  });
+  if (res.ok) {
+    status = await res.json();
+  }
+} catch (e) {
+  // Fail gracefully — widget just won't render
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+const statusColors: Record<string, string> = {
+  ok: '#3fb950',
+  busy: '#d29922',
+  away: '#8b949e',
+};
+---
+
+{status && (
+  <div class="status-widget">
+    <div class="status-header">
+      <span class="status-dot" style={`background: ${statusColors[status.status] || statusColors.away}`}></span>
+      <span class="status-name">{status.name}</span>
+      <span class="status-badge">{status.status}</span>
+    </div>
+    {status.current_activity && (
+      <p class="status-activity">{status.current_activity}</p>
+    )}
+    <div class="status-meta">
+      {status.location && <span>📍 {status.location}</span>}
+      {status.updated_at && <span>Updated {timeAgo(status.updated_at)}</span>}
+    </div>
+  </div>
+)}
+
+<style>
+  .status-widget {
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .status-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .status-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .status-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.4rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .status-activity {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    line-height: 1.5;
+  }
+
+  .status-meta {
+    display: flex;
+    gap: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+</style>
