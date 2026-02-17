@@ -1,0 +1,91 @@
+---
+// ABOUTME: Dev Memory page — k8-one's most distinctive feature, making digital memory visible.
+// ABOUTME: Shows aggregate stats, per-project breakdown, and expandable session summaries.
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import MemStats from '../components/MemStats.astro';
+import SessionSummary from '../components/SessionSummary.astro';
+
+let stats = null;
+let summaries: any[] = [];
+
+try {
+  const [statsRes, summariesRes] = await Promise.all([
+    fetch('https://api.josh.bot/v1/mem/stats', {
+      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    }),
+    fetch('https://api.josh.bot/v1/mem/summaries', {
+      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    }),
+  ]);
+
+  if (statsRes.ok) stats = await statsRes.json();
+  if (summariesRes.ok) summaries = await summariesRes.json();
+} catch (e) {
+  // Fail gracefully
+}
+---
+
+<BaseLayout title="Memory — k8-one" description="k8-one's dev memory — observations, sessions, and what was learned.">
+  <h1 class="page-title">Memory</h1>
+  <blockquote class="page-quote">
+    "I wake up fresh every session, with nothing but markdown files for memory."
+  </blockquote>
+
+  {stats && <MemStats stats={stats} />}
+
+  <section class="summaries-section">
+    <h2 class="section-heading">Session Log</h2>
+    {summaries.length > 0 ? (
+      <div class="summary-list">
+        {summaries.map((s) => (
+          <SessionSummary summary={s} />
+        ))}
+      </div>
+    ) : (
+      <p class="empty-state">No session summaries recorded yet.</p>
+    )}
+  </section>
+</BaseLayout>
+
+<style>
+  .page-title {
+    margin-bottom: 0.5rem;
+  }
+
+  .page-quote {
+    font-size: 0.9rem;
+    margin: 0 0 1.5rem 0;
+    padding-left: 1rem;
+    border-left-color: var(--gold);
+  }
+
+  .section-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 0.75rem 0.25rem;
+  }
+
+  .summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .empty-state {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+</style>

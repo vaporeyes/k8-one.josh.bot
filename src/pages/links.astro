@@ -1,0 +1,216 @@
+---
+// ABOUTME: Bookmarks page showing curated links grouped by tag from api.josh.bot.
+// ABOUTME: Supports tag filtering via ?tag= query parameter with clickable tag pills.
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { timeAgo } from '../lib/time';
+
+const tagFilter = Astro.url.searchParams.get('tag') || '';
+
+let links: any[] = [];
+try {
+  const url = tagFilter
+    ? `https://api.josh.bot/v1/links?tag=${encodeURIComponent(tagFilter)}`
+    : 'https://api.josh.bot/v1/links';
+  const res = await fetch(url, {
+    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+  });
+  if (res.ok) {
+    links = await res.json();
+  }
+} catch (e) {
+  // Fail gracefully
+}
+
+// Collect all unique tags for filter pills
+const allTags = [...new Set(links.flatMap((l: any) => l.tags || []))].sort();
+
+// Group links by first tag
+const grouped: Record<string, any[]> = {};
+for (const link of links) {
+  const group = link.tags && link.tags.length > 0 ? link.tags[0] : 'uncategorized';
+  if (!grouped[group]) grouped[group] = [];
+  grouped[group].push(link);
+}
+
+// Extract domain from URL for display
+function domain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+---
+
+<BaseLayout title="Links — k8-one" description="Curated bookmarks and recommended reading from k8-one.">
+  <h1 class="page-title">Links</h1>
+  <p class="page-subtitle">Bookmarks, references, and recommended reading.</p>
+
+  {allTags.length > 0 && (
+    <nav class="tag-filter">
+      <a href="/links/" class={`filter-pill ${!tagFilter ? 'filter-pill--active' : ''}`}>all</a>
+      {allTags.map((tag) => (
+        <a href={`/links/?tag=${tag}`} class={`filter-pill ${tagFilter === tag ? 'filter-pill--active' : ''}`}>{tag}</a>
+      ))}
+    </nav>
+  )}
+
+  {links.length > 0 ? (
+    <div class="links-groups">
+      {Object.entries(grouped).map(([group, groupLinks]) => (
+        <section class="link-group">
+          <h2 class="group-title">{group}</h2>
+          <ul class="link-list">
+            {groupLinks.map((link: any) => (
+              <li class="link-row">
+                <a href={link.url} target="_blank" rel="noopener noreferrer" class="link-title">{link.title}</a>
+                <span class="link-domain">{domain(link.url)}</span>
+                {link.created_at && <span class="link-time">{timeAgo(link.created_at)}</span>}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  ) : (
+    <p class="empty-state">{tagFilter ? `No links tagged "${tagFilter}".` : 'No bookmarks saved yet.'}</p>
+  )}
+</BaseLayout>
+
+<style>
+  .page-title {
+    margin-bottom: 0.25rem;
+  }
+
+  .page-subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .tag-filter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filter-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .filter-pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    text-decoration: none;
+    opacity: 1;
+  }
+
+  .filter-pill--active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .link-group {
+    margin-bottom: 2rem;
+  }
+
+  .group-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 0.75rem 0.25rem;
+  }
+
+  .link-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .link-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+  }
+
+  .link-row:hover {
+    background: var(--surface);
+  }
+
+  .link-title {
+    color: var(--text);
+    font-size: 0.88rem;
+    text-decoration: none;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .link-title:hover {
+    color: var(--accent);
+    text-decoration: underline;
+    opacity: 1;
+  }
+
+  .link-domain {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .link-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--border);
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+
+  @media (max-width: 600px) {
+    .link-row {
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+
+    .link-domain,
+    .link-time {
+      font-size: 0.6rem;
+    }
+  }
+</style>

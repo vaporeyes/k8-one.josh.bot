@@ -1,0 +1,159 @@
+---
+// ABOUTME: Renders aggregate dev memory statistics as three big numbers and a project breakdown.
+// ABOUTME: Displays observation, summary, and prompt counts with per-project horizontal bars.
+
+interface Props {
+  stats: {
+    total_observations: number;
+    total_summaries: number;
+    total_prompts: number;
+    by_project?: Record<string, number>;
+    by_type?: Record<string, number>;
+  };
+}
+
+const { stats } = Astro.props;
+
+// Calculate max for bar widths
+const projectEntries = stats.by_project ? Object.entries(stats.by_project).sort((a, b) => b[1] - a[1]) : [];
+const maxCount = projectEntries.length > 0 ? projectEntries[0][1] : 1;
+---
+
+<div class="mem-stats">
+  <div class="big-numbers">
+    <div class="big-number">
+      <span class="big-value">{stats.total_observations.toLocaleString()}</span>
+      <span class="big-label">observations</span>
+    </div>
+    <div class="big-number">
+      <span class="big-value">{stats.total_summaries.toLocaleString()}</span>
+      <span class="big-label">summaries</span>
+    </div>
+    <div class="big-number">
+      <span class="big-value">{stats.total_prompts.toLocaleString()}</span>
+      <span class="big-label">prompts</span>
+    </div>
+  </div>
+
+  {projectEntries.length > 0 && (
+    <div class="project-breakdown">
+      <h3 class="breakdown-heading">By Project</h3>
+      {projectEntries.map(([project, count]) => (
+        <div class="bar-row">
+          <span class="bar-label">{project}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style={`width: ${(count / maxCount) * 100}%`}></div>
+          </div>
+          <span class="bar-count">{count}</span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .mem-stats {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .big-numbers {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .big-number {
+    text-align: center;
+  }
+
+  .big-value {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 600;
+    color: var(--gold);
+    line-height: 1.2;
+  }
+
+  .big-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+  }
+
+  .breakdown-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 0.75rem 0;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .bar-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    width: 120px;
+    flex-shrink: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+
+  .bar-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .big-numbers {
+      gap: 1rem;
+    }
+
+    .big-value {
+      font-size: 1.2rem;
+    }
+
+    .bar-label {
+      width: 80px;
+      font-size: 0.62rem;
+    }
+  }
+</style>

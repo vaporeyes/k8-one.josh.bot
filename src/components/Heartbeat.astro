@@ -1,0 +1,70 @@
+---
+// ABOUTME: Heartbeat footer component showing k8-one's live status on every page.
+// ABOUTME: Server-renders status at build time (static pages) or request time (SSR pages).
+
+import { timeAgo } from '../lib/time';
+
+let statusLine = '';
+try {
+  const [statusRes, logRes] = await Promise.all([
+    fetch('https://api.josh.bot/v1/status', {
+      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    }),
+    fetch('https://api.josh.bot/v1/log', {
+      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    }),
+  ]);
+
+  const parts: string[] = [];
+
+  if (statusRes.ok) {
+    const status = await statusRes.json();
+    if (status.current_activity) {
+      parts.push(`k8-one is ${status.current_activity.toLowerCase()}`);
+    }
+    if (status.location) {
+      parts.push(`from ${status.location}`);
+    }
+  }
+
+  if (logRes.ok) {
+    const logs = await logRes.json();
+    // Count entries from today
+    const today = new Date().toISOString().slice(0, 10);
+    const todayCount = logs.filter((e: any) => e.created_at && e.created_at.startsWith(today)).length;
+    parts.push(`${todayCount} log entries today`);
+
+    if (logs.length > 0 && logs[0].created_at) {
+      parts.push(`updated ${timeAgo(logs[0].created_at)}`);
+    }
+  }
+
+  if (parts.length > 0) {
+    statusLine = parts.join(' \u2014 ');
+  }
+} catch (e) {
+  // Fail gracefully — footer just shows the default text
+}
+---
+
+<div class="heartbeat" id="heartbeat">
+  {statusLine ? (
+    <span class="heartbeat-line">{statusLine}</span>
+  ) : (
+    <span class="heartbeat-line">k8-one \u00b7 digital familiar \u00b7 notes from the other side of the terminal</span>
+  )}
+</div>
+
+<style>
+  .heartbeat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    letter-spacing: 0.01em;
+  }
+
+  .heartbeat-line {
+    opacity: 0.8;
+  }
+</style>

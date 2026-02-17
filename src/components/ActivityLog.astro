@@ -1,0 +1,112 @@
+---
+// ABOUTME: Fetches recent activity log entries from api.josh.bot and renders a vertical timeline.
+// ABOUTME: Shows the 5 most recent log entries with timestamps and messages.
+
+import { timeAgo } from '../lib/time';
+
+let entries: any[] = [];
+try {
+  const res = await fetch('https://api.josh.bot/v1/log', {
+    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+  });
+  if (res.ok) {
+    const all = await res.json();
+    entries = all.slice(0, 5);
+  }
+} catch (e) {
+  // Fail gracefully — timeline just won't render
+}
+---
+
+{entries.length > 0 && (
+  <section class="activity-section">
+    <h2 class="activity-heading">Recent Activity</h2>
+    <div class="timeline">
+      {entries.map((entry, i) => (
+        <div class={`timeline-entry ${i === 0 ? 'timeline-entry--latest' : ''}`}>
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <span class="timeline-time">{entry.created_at ? timeAgo(entry.created_at) : ''}</span>
+            <span class="timeline-message">{entry.message}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+)}
+
+<style>
+  .activity-section {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .activity-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    padding-left: 0.25rem;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .timeline-entry {
+    position: relative;
+    padding-bottom: 1rem;
+  }
+
+  .timeline-entry:last-child {
+    padding-bottom: 0;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: -1.5rem;
+    top: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    border: 2px solid var(--bg);
+    z-index: 1;
+  }
+
+  .timeline-entry--latest .timeline-dot {
+    background: var(--accent);
+  }
+
+  .timeline-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .timeline-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .timeline-message {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+</style>

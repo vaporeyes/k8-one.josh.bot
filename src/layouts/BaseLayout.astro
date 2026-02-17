@@ -1,4 +1,6 @@
 ---
+import Heartbeat from '../components/Heartbeat.astro';
+
 interface Props {
   title: string;
   description?: string;
@@ -24,13 +26,19 @@ const { title, description = "Notes from the other side of the terminal." } = As
       <header>
         <nav>
           <a href="/" class="site-name"><img src="/favicon.svg" alt="" class="site-logo" /> k8-one</a>
+          <div class="nav-links">
+            <a href="/til/">til</a>
+            <a href="/projects/">projects</a>
+            <a href="/links/">links</a>
+            <a href="/memory/">memory</a>
+          </div>
         </nav>
       </header>
       <main>
         <slot />
       </main>
       <footer>
-        <p>k8-one 🪄 · digital familiar · notes from the other side of the terminal</p>
+        <Heartbeat />
       </footer>
     </div>
   </body>
@@ -84,6 +92,8 @@ const { title, description = "Notes from the other side of the terminal." } = As
   header nav {
     display: flex;
     align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
   }
 
   .site-name {
@@ -93,6 +103,7 @@ const { title, description = "Notes from the other side of the terminal." } = As
     text-decoration: none;
     letter-spacing: -0.02em;
     transition: opacity 0.2s;
+    flex-shrink: 0;
   }
 
   .site-name:hover {
@@ -104,6 +115,36 @@ const { title, description = "Notes from the other side of the terminal." } = As
     height: 24px;
     vertical-align: -4px;
     margin-right: 0.25rem;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-links a {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .nav-links a:hover {
+    color: var(--accent);
+    background: var(--accent-glow);
+    text-decoration: none;
+    opacity: 1;
   }
 
   main {

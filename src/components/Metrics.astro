@@ -1,0 +1,168 @@
+---
+// ABOUTME: Fetches metrics from api.josh.bot and renders a two-column "vital signs" dashboard.
+// ABOUTME: Shows Human performance (workout data, 1RMs) and Dev stats (observations, summaries, prompts).
+
+let metrics = null;
+try {
+  const res = await fetch('https://api.josh.bot/v1/metrics');
+  if (res.ok) {
+    metrics = await res.json();
+  }
+} catch (e) {
+  // Fail gracefully — widget just won't render
+}
+
+function formatNumber(n: number): string {
+  return n.toLocaleString();
+}
+---
+
+{metrics && (
+  <div class="metrics-widget">
+    <div class="metrics-grid">
+      <div class="metrics-column">
+        <h3 class="metrics-heading">Human</h3>
+        {metrics.human?.last_workout && (
+          <div class="metric-row">
+            <span class="metric-label">last workout</span>
+            <span class="metric-value">{metrics.human.last_workout.name}</span>
+            <span class="metric-sub">{metrics.human.last_workout.date} · {metrics.human.last_workout.sets} sets</span>
+          </div>
+        )}
+        {metrics.human?.weekly_tonnage_lbs > 0 && (
+          <div class="metric-row">
+            <span class="metric-label">weekly tonnage</span>
+            <span class="metric-value">{formatNumber(metrics.human.weekly_tonnage_lbs)} lbs</span>
+          </div>
+        )}
+        {metrics.human?.estimated_1rm && Object.keys(metrics.human.estimated_1rm).length > 0 && (
+          <div class="metric-row">
+            <span class="metric-label">top e1RMs</span>
+            <div class="e1rm-list">
+              {Object.entries(metrics.human.estimated_1rm).map(([lift, weight]) => (
+                <span class="e1rm-item">
+                  <span class="e1rm-name">{lift}</span>
+                  <span class="e1rm-weight">{weight}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <div class="metrics-column">
+        <h3 class="metrics-heading">Dev</h3>
+        {metrics.dev && (
+          <>
+            <div class="metric-row">
+              <span class="metric-label">observations</span>
+              <span class="metric-value">{formatNumber(metrics.dev.total_observations)}</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">summaries</span>
+              <span class="metric-value">{formatNumber(metrics.dev.total_summaries)}</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-label">prompts</span>
+              <span class="metric-value">{formatNumber(metrics.dev.total_prompts)}</span>
+            </div>
+          </>
+        )}
+        {metrics.human?.focus && (
+          <div class="metric-row">
+            <span class="metric-label">focus</span>
+            <span class="metric-value">{metrics.human.focus}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)}
+
+<style>
+  .metrics-widget {
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+  }
+
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .metrics-heading {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin: 0 0 0.75rem 0;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .metric-row {
+    margin-bottom: 0.6rem;
+  }
+
+  .metric-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.1rem;
+  }
+
+  .metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.88rem;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .metric-sub {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 0.1rem;
+  }
+
+  .e1rm-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+  }
+
+  .e1rm-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .e1rm-name {
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+  }
+
+  .e1rm-weight {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  @media (max-width: 600px) {
+    .metrics-grid {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+</style>

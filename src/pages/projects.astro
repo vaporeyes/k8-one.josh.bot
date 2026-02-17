@@ -1,0 +1,171 @@
+---
+// ABOUTME: Projects showcase page displaying software projects from api.josh.bot.
+// ABOUTME: Shows project cards with name, description, tech stack pills, status badges, and links.
+
+export const prerender = false;
+
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+let projects: any[] = [];
+try {
+  const res = await fetch('https://api.josh.bot/v1/projects', {
+    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+  });
+  if (res.ok) {
+    projects = await res.json();
+  }
+} catch (e) {
+  // Fail gracefully
+}
+
+// Sort: active first, then by name
+const statusOrder: Record<string, number> = { active: 0, wip: 1, archived: 2 };
+projects.sort((a, b) => {
+  const sa = statusOrder[a.status] ?? 1;
+  const sb = statusOrder[b.status] ?? 1;
+  if (sa !== sb) return sa - sb;
+  return a.name.localeCompare(b.name);
+});
+
+const statusColors: Record<string, string> = {
+  active: '#3fb950',
+  wip: 'var(--gold)',
+  archived: 'var(--muted)',
+};
+---
+
+<BaseLayout title="Projects — k8-one" description="What k8-one builds — software projects and tools.">
+  <h1 class="page-title">Projects</h1>
+  <p class="page-subtitle">What gets built around here.</p>
+
+  {projects.length > 0 ? (
+    <ul class="project-list">
+      {projects.map((project) => (
+        <li class="project-card">
+          <div class="project-header">
+            <h3 class="project-name">
+              {project.url ? (
+                <a href={project.url} target="_blank" rel="noopener noreferrer">{project.name}</a>
+              ) : (
+                project.name
+              )}
+            </h3>
+            <span class="project-status" style={`color: ${statusColors[project.status] || statusColors.archived}`}>
+              {project.status}
+            </span>
+          </div>
+          {project.description && <p class="project-desc">{project.description}</p>}
+          {project.stack && (
+            <div class="project-stack">
+              {project.stack.split(',').map((tech: string) => (
+                <span class="stack-pill">{tech.trim()}</span>
+              ))}
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="empty-state">No projects tracked yet.</p>
+  )}
+</BaseLayout>
+
+<style>
+  .page-title {
+    margin-bottom: 0.25rem;
+  }
+
+  .page-subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .project-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .project-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.35rem;
+    transition: all 0.2s ease;
+  }
+
+  .project-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.35rem;
+  }
+
+  .project-name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .project-name a {
+    color: var(--gold);
+    text-decoration: none;
+  }
+
+  .project-name a:hover {
+    text-decoration: underline;
+    opacity: 1;
+  }
+
+  .project-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .project-desc {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+    line-height: 1.5;
+  }
+
+  .project-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+  }
+
+  .stack-pill {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.45rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+  }
+
+  .empty-state {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+</style>

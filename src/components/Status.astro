@@ -2,6 +2,8 @@
 // ABOUTME: Fetches Josh's current status from api.josh.bot at build time.
 // ABOUTME: Renders a compact status widget showing activity, location, and availability.
 
+import { timeAgo } from '../lib/time';
+
 let status = null;
 try {
   const res = await fetch('https://api.josh.bot/v1/status', {
@@ -12,16 +14,6 @@ try {
   }
 } catch (e) {
   // Fail gracefully — widget just won't render
-}
-
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 const statusColors: Record<string, string> = {

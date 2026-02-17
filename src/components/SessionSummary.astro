@@ -1,0 +1,182 @@
+---
+// ABOUTME: Renders a single session summary as an expandable details/summary element.
+// ABOUTME: Shows request, investigated, learned, completed, and next steps fields.
+
+import { timeAgo } from '../lib/time';
+
+interface Props {
+  summary: {
+    id: string;
+    project?: string;
+    session_id?: string;
+    request?: string;
+    investigated?: string;
+    learned?: string;
+    completed?: string;
+    next_steps?: string;
+    notes?: string;
+    created_at: string;
+  };
+}
+
+const { summary } = Astro.props;
+---
+
+<details class="session-card">
+  <summary class="session-header">
+    <span class="session-request">{summary.request || 'Untitled session'}</span>
+    <span class="session-meta">
+      {summary.project && <span class="session-project">{summary.project}</span>}
+      <span class="session-time">{timeAgo(summary.created_at)}</span>
+    </span>
+  </summary>
+  <div class="session-body">
+    {summary.investigated && (
+      <div class="session-field">
+        <span class="field-label">investigated</span>
+        <p class="field-value">{summary.investigated}</p>
+      </div>
+    )}
+    {summary.learned && (
+      <div class="session-field session-field--learned">
+        <span class="field-label">learned</span>
+        <p class="field-value">{summary.learned}</p>
+      </div>
+    )}
+    {summary.completed && (
+      <div class="session-field">
+        <span class="field-label">completed</span>
+        <p class="field-value">{summary.completed}</p>
+      </div>
+    )}
+    {summary.next_steps && (
+      <div class="session-field">
+        <span class="field-label">next steps</span>
+        <p class="field-value">{summary.next_steps}</p>
+      </div>
+    )}
+    {summary.notes && (
+      <div class="session-field">
+        <span class="field-label">notes</span>
+        <p class="field-value">{summary.notes}</p>
+      </div>
+    )}
+  </div>
+</details>
+
+<style>
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .session-card[open] {
+    border-color: var(--accent);
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+
+  .session-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    list-style: none;
+    gap: 0.75rem;
+  }
+
+  .session-header::-webkit-details-marker {
+    display: none;
+  }
+
+  .session-header::before {
+    content: '>';
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  .session-card[open] .session-header::before {
+    transform: rotate(90deg);
+  }
+
+  .session-request {
+    font-size: 0.88rem;
+    color: var(--gold);
+    font-weight: 500;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .session-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .session-project {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    padding: 0.08rem 0.4rem;
+    background: var(--border);
+    color: var(--muted);
+    border-radius: 10px;
+  }
+
+  .session-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+
+  .session-body {
+    padding: 0 1.25rem 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .session-field {
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--border);
+  }
+
+  .session-field--learned {
+    border-left-color: var(--gold);
+  }
+
+  .field-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: lowercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.15rem;
+  }
+
+  .field-value {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  @media (max-width: 600px) {
+    .session-header {
+      flex-wrap: wrap;
+    }
+
+    .session-request {
+      white-space: normal;
+    }
+  }
+</style>
