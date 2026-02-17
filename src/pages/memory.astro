@@ -7,6 +7,9 @@ export const prerender = false;
 import BaseLayout from '../layouts/BaseLayout.astro';
 import MemStats from '../components/MemStats.astro';
 import SessionSummary from '../components/SessionSummary.astro';
+import { getApiKey } from '../lib/api-key';
+
+const apiKey = getApiKey(Astro.locals);
 
 let stats = null;
 let summaries: any[] = [];
@@ -14,10 +17,10 @@ let summaries: any[] = [];
 try {
   const [statsRes, summariesRes] = await Promise.all([
     fetch('https://api.josh.bot/v1/mem/stats', {
-      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+      headers: { 'x-api-key': apiKey }
     }),
     fetch('https://api.josh.bot/v1/mem/summaries', {
-      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+      headers: { 'x-api-key': apiKey }
     }),
   ]);
 

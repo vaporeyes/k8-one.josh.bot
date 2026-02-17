@@ -3,11 +3,14 @@
 // ABOUTME: Renders a compact status widget showing activity, location, and availability.
 
 import { timeAgo } from '../lib/time';
+import { getApiKey } from '../lib/api-key';
+
+const apiKey = getApiKey(Astro.locals);
 
 let status = null;
 try {
   const res = await fetch('https://api.josh.bot/v1/status', {
-    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    headers: { 'x-api-key': apiKey }
   });
   if (res.ok) {
     status = await res.json();

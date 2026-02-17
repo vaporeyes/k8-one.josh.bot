@@ -5,11 +5,14 @@
 export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getApiKey } from '../lib/api-key';
+
+const apiKey = getApiKey(Astro.locals);
 
 let projects: any[] = [];
 try {
   const res = await fetch('https://api.josh.bot/v1/projects', {
-    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    headers: { 'x-api-key': apiKey }
   });
   if (res.ok) {
     projects = await res.json();

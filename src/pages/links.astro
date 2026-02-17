@@ -6,7 +6,9 @@ export const prerender = false;
 
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { timeAgo } from '../lib/time';
+import { getApiKey } from '../lib/api-key';
 
+const apiKey = getApiKey(Astro.locals);
 const tagFilter = Astro.url.searchParams.get('tag') || '';
 
 let links: any[] = [];
@@ -15,7 +17,7 @@ try {
     ? `https://api.josh.bot/v1/links?tag=${encodeURIComponent(tagFilter)}`
     : 'https://api.josh.bot/v1/links';
   const res = await fetch(url, {
-    headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+    headers: { 'x-api-key': apiKey }
   });
   if (res.ok) {
     links = await res.json();

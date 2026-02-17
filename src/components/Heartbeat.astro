@@ -3,15 +3,18 @@
 // ABOUTME: Server-renders status at build time (static pages) or request time (SSR pages).
 
 import { timeAgo } from '../lib/time';
+import { getApiKey } from '../lib/api-key';
+
+const apiKey = getApiKey(Astro.locals);
 
 let statusLine = '';
 try {
   const [statusRes, logRes] = await Promise.all([
     fetch('https://api.josh.bot/v1/status', {
-      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+      headers: { 'x-api-key': apiKey }
     }),
     fetch('https://api.josh.bot/v1/log', {
-      headers: { 'x-api-key': import.meta.env.JOSH_BOT_API_KEY || '' }
+      headers: { 'x-api-key': apiKey }
     }),
   ]);
 
