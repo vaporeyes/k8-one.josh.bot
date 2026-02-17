@@ -1,0 +1,6 @@
+# ABOUTME: Cloudflare Pages configuration for k8-one blog.
+# ABOUTME: Defines the Pages project name and compatibility settings.
+
+name = "k8-one-josh-bot"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "./dist"
