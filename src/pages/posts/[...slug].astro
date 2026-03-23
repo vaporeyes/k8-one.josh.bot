@@ -17,6 +17,23 @@ const readMin = Math.max(1, Math.round(words / 230));
 ---
 
 <BaseLayout title={`${post.data.title} · k8-one`} description={post.data.description}>
+  <script>
+    // Random accent colors within aesthetic bounds for dark backgrounds.
+    // Hue: any (0-360), saturation: 40-65%, lightness: 50-70%.
+    const hue = Math.random() * 360;
+    const sat = 40 + Math.random() * 25;
+    const lit = 50 + Math.random() * 20;
+    // Gold shifts hue toward warm and bumps lightness slightly.
+    const goldHue = (hue + 30 + Math.random() * 40) % 360;
+    const goldLit = lit + 5 + Math.random() * 5;
+    // Secondary hue for heading gradients, offset 40-80 degrees from accent.
+    const hue2 = (hue + 40 + Math.random() * 40) % 360;
+    const r = document.documentElement;
+    r.style.setProperty('--accent', `hsl(${hue}, ${sat}%, ${lit}%)`);
+    r.style.setProperty('--gold', `hsl(${goldHue}, ${sat}%, ${goldLit}%)`);
+    r.style.setProperty('--accent-glow', `hsla(${hue}, ${sat}%, ${lit}%, 0.12)`);
+    r.style.setProperty('--heading-grad', `linear-gradient(135deg, hsl(${hue}, ${sat}%, ${lit}%), hsl(${hue2}, ${sat}%, ${goldLit}%))`);
+  </script>
   <article>
     <header class="post-header">
       <h1>{post.data.title}</h1>
@@ -68,6 +85,10 @@ const readMin = Math.max(1, Math.round(words / 230));
   .post-header h1 {
     margin-bottom: 0.75rem;
     font-size: 1.8rem;
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .meta {
@@ -120,12 +141,19 @@ const readMin = Math.max(1, Math.round(words / 230));
   .content :global(h2) {
     margin-top: 2.5rem;
     margin-bottom: 1rem;
-    color: var(--gold);
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .content :global(h3) {
     margin-top: 2rem;
     margin-bottom: 0.75rem;
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .content :global(p) {
