@@ -101,9 +101,9 @@ const statusColors: Record<string, string> = {
   }
 
   .project-card:hover {
-    border-color: var(--accent);
+    border-color: var(--card-accent, var(--accent));
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px var(--accent-glow);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--card-accent, var(--accent)) 12%, transparent);
   }
 
   .project-header {
@@ -116,13 +116,13 @@ const statusColors: Record<string, string> = {
   .project-name {
     font-size: 1.05rem;
     font-weight: 600;
-    color: var(--gold);
+    color: var(--card-accent, var(--gold));
     margin: 0;
     line-height: 1.4;
   }
 
   .project-name a {
-    color: var(--gold);
+    color: var(--card-accent, var(--gold));
     text-decoration: none;
   }
 
@@ -172,3 +172,29 @@ const statusColors: Record<string, string> = {
     border-radius: 10px;
   }
 </style>
+
+<script>
+  // Per-card poline border glow for project cards.
+  import { Poline } from 'poline';
+
+  const cards = document.querySelectorAll('.project-card');
+  if (cards.length > 0) {
+    const hue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [hue, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+        [(hue + 100 + Math.random() * 80) % 360, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+      ],
+      numPoints: Math.max(cards.length, 3),
+    });
+    const css = p.colorsCSS;
+
+    cards.forEach((card, i) => {
+      const ci = Math.floor((i / cards.length) * css.length);
+      const c = css[Math.min(ci, css.length - 1)];
+      const el = card as HTMLElement;
+      // Apply color on hover via CSS custom property per card.
+      el.style.setProperty('--card-accent', c);
+    });
+  }
+</script>

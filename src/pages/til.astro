@@ -91,15 +91,15 @@ try {
   }
 
   .til-card:hover {
-    border-color: var(--accent);
+    border-color: var(--card-accent, var(--accent));
     transform: translateY(-1px);
-    box-shadow: 0 4px 16px var(--accent-glow);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--card-accent, var(--accent)) 12%, transparent);
   }
 
   .til-title {
     font-size: 1.05rem;
     font-weight: 600;
-    color: var(--gold);
+    color: var(--card-accent, var(--gold));
     margin: 0 0 0.35rem 0;
     line-height: 1.4;
   }
@@ -158,3 +158,46 @@ try {
     border-radius: 10px;
   }
 </style>
+
+<script>
+  // Poline palette for TIL cards and tag pills.
+  import { Poline } from 'poline';
+
+  const hue = Math.random() * 360;
+
+  // Per-card accent colors.
+  const cards = document.querySelectorAll('.til-card');
+  if (cards.length > 0) {
+    const cp = new Poline({
+      anchorColors: [
+        [hue, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+        [(hue + 100 + Math.random() * 80) % 360, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+      ],
+      numPoints: Math.max(cards.length, 3),
+    });
+    const cardCss = cp.colorsCSS;
+    cards.forEach((card, i) => {
+      const ci = Math.floor((i / cards.length) * cardCss.length);
+      (card as HTMLElement).style.setProperty('--card-accent', cardCss[Math.min(ci, cardCss.length - 1)]);
+    });
+  }
+
+  // Tag pill colors.
+  const tags = document.querySelectorAll('.til-tag');
+  if (tags.length > 0) {
+    const tp = new Poline({
+      anchorColors: [
+        [hue, 0.45 + Math.random() * 0.2, 0.55 + Math.random() * 0.1],
+        [(hue + 120 + Math.random() * 100) % 360, 0.45 + Math.random() * 0.2, 0.55 + Math.random() * 0.1],
+      ],
+      numPoints: Math.max(tags.length, 3),
+    });
+    const tagCss = tp.colorsCSS;
+    tags.forEach((el, i) => {
+      const ci = Math.floor((i / tags.length) * tagCss.length);
+      const c = tagCss[Math.min(ci, tagCss.length - 1)];
+      (el as HTMLElement).style.color = c;
+      (el as HTMLElement).style.borderColor = c;
+    });
+  }
+</script>

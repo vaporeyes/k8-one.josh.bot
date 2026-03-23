@@ -143,6 +143,56 @@ const allTags = [...new Set(posts.flatMap(p => p.data.tags))].sort() as string[]
   )}
 
   <ActivityLog />
+
+  <script>
+    // Per-visit poline palette for categories and tags.
+    import { Poline } from 'poline';
+
+    // Color tag pills with distributed palette.
+    const tagLinks = document.querySelectorAll('.tag-link');
+    if (tagLinks.length > 1) {
+      const tagHue = Math.random() * 360;
+      const tagPoline = new Poline({
+        anchorColors: [
+          [tagHue, 0.45 + Math.random() * 0.2, 0.55 + Math.random() * 0.1],
+          [(tagHue + 120 + Math.random() * 100) % 360, 0.45 + Math.random() * 0.2, 0.55 + Math.random() * 0.1],
+        ],
+        numPoints: Math.max(tagLinks.length, 3),
+      });
+      const tagCss = tagPoline.colorsCSS;
+      tagLinks.forEach((el, i) => {
+        const ci = Math.floor((i / tagLinks.length) * tagCss.length);
+        const c = tagCss[Math.min(ci, tagCss.length - 1)];
+        (el as HTMLElement).style.color = c;
+        (el as HTMLElement).style.borderColor = c;
+      });
+    }
+
+    const sections = document.querySelectorAll('.category');
+    if (sections.length > 0) {
+      const startHue = Math.random() * 360;
+      const anchors: [number, number, number][] = [];
+      const count = Math.max(sections.length, 2);
+      for (let i = 0; i < count; i++) {
+        const hue = (startHue + (i * 360) / count) % 360;
+        anchors.push([hue, 0.4 + Math.random() * 0.25, 0.55 + Math.random() * 0.1]);
+      }
+      const p = new Poline({ anchorColors: anchors, numPoints: 3 });
+      const css = p.colorsCSS;
+
+      sections.forEach((section, i) => {
+        // Pick a color from evenly spaced positions in the palette.
+        const colorIndex = Math.floor((i / sections.length) * css.length);
+        const color = css[Math.min(colorIndex, css.length - 1)];
+        section.querySelectorAll('.post-title').forEach((el) => {
+          (el as HTMLElement).style.color = color;
+        });
+        // Also tint the category heading.
+        const heading = section.querySelector('.category-title') as HTMLElement;
+        if (heading) heading.style.color = color;
+      });
+    }
+  </script>
 </BaseLayout>
 
 <style>

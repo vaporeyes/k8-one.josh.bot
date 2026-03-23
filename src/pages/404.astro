@@ -23,6 +23,10 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     color: var(--border);
     margin-bottom: 1rem;
     letter-spacing: -0.05em;
+    background: var(--drift-grad, var(--border));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .not-found p {
@@ -49,3 +53,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     text-decoration: underline;
   }
 </style>
+
+<script>
+  // Slowly drifting poline gradient on the 404 text.
+  import { Poline } from 'poline';
+
+  const h1 = document.querySelector('.not-found h1') as HTMLElement;
+  if (h1) {
+    const startHue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [startHue, 0.5, 0.55],
+        [(startHue + 120) % 360, 0.5, 0.55],
+      ],
+      numPoints: 4,
+    });
+
+    function update() {
+      p.shiftHue(0.3);
+      const css = p.colorsCSS;
+      h1.style.setProperty('--drift-grad', `linear-gradient(135deg, ${css.join(', ')})`);
+      requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
+</script>

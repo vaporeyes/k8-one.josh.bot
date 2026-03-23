@@ -67,7 +67,7 @@ try {
     top: 6px;
     bottom: 6px;
     width: 2px;
-    background: var(--border);
+    background: var(--timeline-grad, var(--border));
   }
 
   .timeline-entry {
@@ -95,6 +95,8 @@ try {
     background: var(--accent);
   }
 
+  /* Poline gradient applied via JS below. */
+
   .timeline-content {
     display: flex;
     flex-direction: column;
@@ -113,3 +115,32 @@ try {
     line-height: 1.5;
   }
 </style>
+
+<script>
+  // Poline gradient for the activity timeline spine and dots.
+  import { Poline } from 'poline';
+
+  const timeline = document.querySelector('.timeline') as HTMLElement;
+  const dots = document.querySelectorAll('.timeline-dot');
+  if (timeline && dots.length > 0) {
+    const startHue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [startHue, 0.5 + Math.random() * 0.2, 0.55 + Math.random() * 0.1],
+        [(startHue + 100 + Math.random() * 80) % 360, 0.3 + Math.random() * 0.2, 0.4 + Math.random() * 0.1],
+      ],
+      numPoints: Math.max(dots.length, 3),
+    });
+    const css = p.colorsCSS;
+
+    // Gradient spine from top (newest, bright) to bottom (oldest, muted).
+    const line = timeline.querySelector(':scope') || timeline;
+    timeline.style.setProperty('--timeline-grad', `linear-gradient(to bottom, ${css.join(', ')})`);
+
+    // Color each dot from the palette.
+    dots.forEach((dot, i) => {
+      const colorIndex = Math.floor((i / dots.length) * css.length);
+      (dot as HTMLElement).style.background = css[Math.min(colorIndex, css.length - 1)];
+    });
+  }
+</script>

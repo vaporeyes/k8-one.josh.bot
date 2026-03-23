@@ -220,7 +220,7 @@ const { title, description = "Notes from the other side of the terminal." } = As
     padding: 0.15rem 0.4rem;
     border-radius: 4px;
     font-size: 0.85em;
-    color: var(--accent);
+    color: var(--code-accent, var(--accent));
     border: 1px solid var(--border);
   }
 
@@ -243,7 +243,7 @@ const { title, description = "Notes from the other side of the terminal." } = As
 
   /* Block quotes */
   blockquote {
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--blockquote-accent, var(--accent));
     padding-left: 1.25rem;
     margin: 1.5rem 0;
     color: var(--muted);
@@ -278,7 +278,7 @@ const { title, description = "Notes from the other side of the terminal." } = As
 
   /* Selection */
   ::selection {
-    background: rgba(201, 160, 220, 0.25);
+    background: color-mix(in srgb, var(--selection-color, #c9a0dc) 25%, transparent);
     color: var(--text);
   }
 

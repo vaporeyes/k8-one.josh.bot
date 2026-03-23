@@ -166,3 +166,38 @@ function formatNumber(n: number): string {
     }
   }
 </style>
+
+<script>
+  // Map metric values to poline palette colors by relative magnitude.
+  import { Poline } from 'poline';
+
+  const values = document.querySelectorAll('.metric-value');
+  const e1rmWeights = document.querySelectorAll('.e1rm-weight');
+  const allColorable = [...Array.from(values), ...Array.from(e1rmWeights)];
+
+  if (allColorable.length > 0) {
+    // Parse numeric values; non-numeric get 0.
+    const nums = allColorable.map((el) => {
+      const text = el.textContent || '';
+      const n = parseFloat(text.replace(/[^0-9.]/g, ''));
+      return isNaN(n) ? 0 : n;
+    });
+    const max = Math.max(...nums, 1);
+
+    const hue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [(hue + 60) % 360, 0.3, 0.45],
+        [hue, 0.55, 0.6],
+      ],
+      numPoints: 8,
+    });
+    const css = p.colorsCSS;
+
+    allColorable.forEach((el, i) => {
+      const ratio = nums[i] / max;
+      const ci = Math.floor(ratio * (css.length - 1));
+      (el as HTMLElement).style.color = css[ci];
+    });
+  }
+</script>

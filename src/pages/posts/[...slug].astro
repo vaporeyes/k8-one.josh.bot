@@ -18,21 +18,48 @@ const readMin = Math.max(1, Math.round(words / 230));
 
 <BaseLayout title={`${post.data.title} · k8-one`} description={post.data.description}>
   <script>
-    // Random accent colors within aesthetic bounds for dark backgrounds.
-    // Hue: any (0-360), saturation: 40-65%, lightness: 50-70%.
-    const hue = Math.random() * 360;
-    const sat = 40 + Math.random() * 25;
-    const lit = 50 + Math.random() * 20;
-    // Gold shifts hue toward warm and bumps lightness slightly.
-    const goldHue = (hue + 30 + Math.random() * 40) % 360;
-    const goldLit = lit + 5 + Math.random() * 5;
-    // Secondary hue for heading gradients, offset 40-80 degrees from accent.
-    const hue2 = (hue + 40 + Math.random() * 40) % 360;
+    // Per-visit color palette generated via poline for perceptually smooth gradients.
+    import { Poline } from 'poline';
+
+    // Constrain anchors for dark backgrounds: moderate sat (0.4-0.7), mid lightness (0.45-0.65).
+    const startHue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [startHue, 0.4 + Math.random() * 0.3, 0.5 + Math.random() * 0.15],
+        [(startHue + 80 + Math.random() * 120) % 360, 0.4 + Math.random() * 0.3, 0.5 + Math.random() * 0.15],
+      ],
+      numPoints: 4,
+    });
+
+    const css = p.colorsCSS;
+    // css[0] = first anchor, css[last] = second anchor, middle = interpolated stops.
+    const accent = css[0];
+    const gold = css[css.length - 1];
+    const gradStops = css.join(', ');
+
     const r = document.documentElement;
-    r.style.setProperty('--accent', `hsl(${hue}, ${sat}%, ${lit}%)`);
-    r.style.setProperty('--gold', `hsl(${goldHue}, ${sat}%, ${goldLit}%)`);
-    r.style.setProperty('--accent-glow', `hsla(${hue}, ${sat}%, ${lit}%, 0.12)`);
-    r.style.setProperty('--heading-grad', `linear-gradient(135deg, hsl(${hue}, ${sat}%, ${lit}%), hsl(${hue2}, ${sat}%, ${goldLit}%))`);
+    r.style.setProperty('--accent', accent);
+    r.style.setProperty('--gold', gold);
+    r.style.setProperty('--accent-glow', accent.replace('hsl(', 'hsla(').replace(')', ', 0.12)'));
+    r.style.setProperty('--heading-grad', `linear-gradient(135deg, ${gradStops})`);
+
+    // Color post tag pills from the palette.
+    const tags = document.querySelectorAll('.tag');
+    tags.forEach((el, i) => {
+      const ci = Math.floor((i / Math.max(tags.length, 1)) * css.length);
+      const c = css[Math.min(ci, css.length - 1)];
+      (el as HTMLElement).style.color = c;
+    });
+
+    // Blockquote border from warm end, inline code color from cool end.
+    const warmColor = css[css.length - 1];
+    const coolColor = css[0];
+    r.style.setProperty('--blockquote-accent', warmColor);
+    r.style.setProperty('--code-accent', coolColor);
+
+    // Selection highlight from palette midpoint.
+    const midColor = css[Math.floor(css.length / 2)];
+    r.style.setProperty('--selection-color', midColor);
   </script>
   <article>
     <header class="post-header">
@@ -170,7 +197,7 @@ const readMin = Math.max(1, Math.round(words / 230));
   }
 
   .content :global(blockquote) {
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--blockquote-accent, var(--accent));
     padding-left: 1.25rem;
     margin: 1.5rem 0;
     color: var(--muted);
