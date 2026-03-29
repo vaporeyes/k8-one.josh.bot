@@ -1,0 +1,192 @@
+---
+// ABOUTME: Renders an individual cheat sheet with full markdown content.
+// ABOUTME: Uses per-visit poline color palette for headings and accents.
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+export async function getStaticPaths() {
+  const sheets = await getCollection('cheatsheets');
+  return sheets.map((sheet) => ({
+    params: { slug: sheet.slug },
+    props: sheet,
+  }));
+}
+
+const sheet = Astro.props;
+const { Content } = await sheet.render();
+---
+
+<BaseLayout title={`${sheet.data.title} Cheat Sheet - k8-one`} description={sheet.data.description}>
+  <script>
+    // Per-visit color palette via poline.
+    import { Poline } from 'poline';
+
+    const startHue = Math.random() * 360;
+    const p = new Poline({
+      anchorColors: [
+        [startHue, 0.4 + Math.random() * 0.3, 0.5 + Math.random() * 0.15],
+        [(startHue + 80 + Math.random() * 120) % 360, 0.4 + Math.random() * 0.3, 0.5 + Math.random() * 0.15],
+      ],
+      numPoints: 4,
+    });
+
+    const css = p.colorsCSS;
+    const accent = css[0];
+    const gold = css[css.length - 1];
+    const gradStops = css.join(', ');
+
+    const r = document.documentElement;
+    r.style.setProperty('--accent', accent);
+    r.style.setProperty('--gold', gold);
+    r.style.setProperty('--accent-glow', accent.replace('hsl(', 'hsla(').replace(')', ', 0.12)'));
+    r.style.setProperty('--heading-grad', `linear-gradient(135deg, ${gradStops})`);
+    r.style.setProperty('--code-accent', css[0]);
+    r.style.setProperty('--selection-color', css[Math.floor(css.length / 2)]);
+  </script>
+  <article>
+    <header class="sheet-header">
+      <h1>{sheet.data.title}</h1>
+      <div class="meta">
+        <span class="sheet-desc">{sheet.data.description}</span>
+        {sheet.data.updatedDate && (
+          <span class="sheet-updated">
+            updated {sheet.data.updatedDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
+          </span>
+        )}
+      </div>
+    </header>
+
+    <div class="content">
+      <Content />
+    </div>
+
+    <nav class="sheet-nav">
+      <a href="/cheatsheets/" class="back-link">&larr; all cheat sheets</a>
+    </nav>
+  </article>
+</BaseLayout>
+
+<style>
+  article {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .sheet-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sheet-header h1 {
+    margin-bottom: 0.75rem;
+    font-size: 1.8rem;
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .sheet-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+  }
+
+  .sheet-updated {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .content {
+    line-height: 1.85;
+    font-size: 1.02rem;
+  }
+
+  .content :global(h2) {
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .content :global(h3) {
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    background: var(--heading-grad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .content :global(p) {
+    margin-bottom: 1.25rem;
+  }
+
+  .content :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+  }
+
+  .content :global(th) {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .content :global(td) {
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+
+  .sheet-nav {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .back-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 600px) {
+    .sheet-header h1 {
+      font-size: 1.5rem;
+    }
+
+    .content {
+      font-size: 0.95rem;
+    }
+  }
+</style>

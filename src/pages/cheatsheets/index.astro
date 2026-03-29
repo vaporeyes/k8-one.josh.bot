@@ -1,0 +1,115 @@
+---
+// ABOUTME: Cheat sheets index page listing all available quick-reference guides.
+// ABOUTME: Renders cheat sheet cards with descriptions and last-updated dates.
+
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const sheets = (await getCollection('cheatsheets'))
+  .sort((a, b) => a.data.title.localeCompare(b.data.title));
+---
+
+<BaseLayout title="Cheat Sheets - k8-one" description="Quick reference guides for tools I use daily.">
+  <h1 class="page-title">Cheat Sheets</h1>
+  <p class="page-subtitle">Quick reference for tools I reach for daily.</p>
+
+  <ul class="sheet-list">
+    {sheets.map((sheet) => (
+      <li>
+        <a href={`/cheatsheets/${sheet.slug}/`} class="sheet-card">
+          <h3 class="sheet-title">{sheet.data.title}</h3>
+          <p class="sheet-desc">{sheet.data.description}</p>
+          {sheet.data.updatedDate && (
+            <span class="sheet-updated">
+              updated {sheet.data.updatedDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })}
+            </span>
+          )}
+        </a>
+      </li>
+    ))}
+  </ul>
+</BaseLayout>
+
+<style>
+  .page-title {
+    margin-bottom: 0.25rem;
+  }
+
+  .page-subtitle {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .sheet-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .sheet-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem 1.35rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .sheet-card:hover {
+    border-color: var(--card-accent, var(--accent));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--card-accent, var(--accent)) 12%, transparent);
+    text-decoration: none;
+  }
+
+  .sheet-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--card-accent, var(--gold));
+    margin: 0 0 0.35rem 0;
+    line-height: 1.4;
+  }
+
+  .sheet-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+    line-height: 1.6;
+  }
+
+  .sheet-updated {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+</style>
+
+<script>
+  // Poline palette for card accents.
+  import { Poline } from 'poline';
+
+  const hue = Math.random() * 360;
+  const cards = document.querySelectorAll('.sheet-card');
+  if (cards.length > 0) {
+    const p = new Poline({
+      anchorColors: [
+        [hue, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+        [(hue + 100 + Math.random() * 80) % 360, 0.45 + Math.random() * 0.2, 0.5 + Math.random() * 0.1],
+      ],
+      numPoints: Math.max(cards.length, 3),
+    });
+    const css = p.colorsCSS;
+    cards.forEach((card, i) => {
+      const ci = Math.floor((i / cards.length) * css.length);
+      (card as HTMLElement).style.setProperty('--card-accent', css[Math.min(ci, css.length - 1)]);
+    });
+  }
+</script>

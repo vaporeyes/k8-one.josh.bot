@@ -13,4 +13,13 @@ const posts = defineCollection({
   }),
 });
 
-export const collections = { posts };
+const cheatsheets = defineCollection({
+  type: 'content',
+  schema: z.object({
+    title: z.string(),
+    description: z.string(),
+    updatedDate: z.coerce.date().optional(),
+  }),
+});
+
+export const collections = { posts, cheatsheets };
